@@ -1,0 +1,1004 @@
+import java.awt.*;
+
+import javax.swing.*;
+
+import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * Astro
+ * 
+ * @author Elliott, Christian, Sina
+ * @version May 20th
+ */
+public class AstroGameBoard extends JPanel implements MouseListener,
+		MouseMotionListener {
+
+	// Program constants
+	private static final long serialVersionUID = 4268749691361298715L;
+	private final Color transGray2 = new Color(.5f, .5f, .5f, .125f);
+	private final Color transGray1 = new Color(.5f, .5f, .5f, .3f);
+
+	// Artwork created by the wonderful amazing swagmast Christian
+	public final Dimension BOARD_SIZE = new Dimension(27 * 27 + 200, 25 * 27);
+
+	// Towers and the dragged perspective
+	private final Image[] towerOneDrag = {
+			new ImageIcon("img\\tower\\tower1Drag.png").getImage(),
+			new ImageIcon("img\\tower\\tower1DragUnselected.png").getImage() };
+	private final Image[] towerTwoDrag = {
+			new ImageIcon("img\\tower\\tower2Drag.png").getImage(),
+			new ImageIcon("img\\tower\\tower2DragUnselected.png").getImage() };
+	private final Image towerOne = new ImageIcon("img\\tower\\tower1.png")
+			.getImage();
+	private final Image towerTwo = new ImageIcon("img\\tower\\tower2.png")
+			.getImage();
+	private final Image towerThree = new ImageIcon("img\\tower\\Tower3.png")
+			.getImage();
+	private final Image[] towerThreeDrag = {
+			new ImageIcon("img\\tower\\Tower3Drag.png").getImage(),
+			new ImageIcon("img\\tower\\tower3DragUnselected.png").getImage() };
+	private final Image towerFour = new ImageIcon("img\\tower\\tower4.png")
+			.getImage();
+	private final Image[] towerFourDrag = {
+			new ImageIcon("img\\tower\\tower4Drag.png").getImage(),
+			new ImageIcon("img\\tower\\tower4DragUnselected.png").getImage() };
+
+	// Tower Upgrade Buttons and Tower Remove Upgrade Buttons
+	private final Image[] firingUpgrade = {
+			new ImageIcon("img\\tower\\firingUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\firingUpgradeRemove.png").getImage() };
+
+	private final Image[] damageUpgrade = {
+			new ImageIcon("img\\tower\\damageUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\damageUpgradeRemove.png").getImage() };
+
+	private final Image[] rangeUpgrade = {
+			new ImageIcon("img\\tower\\rangeUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\rangeUpgradeRemove.png").getImage() };
+
+	private final Image[] exploadingBombsUpgrade = {
+			new ImageIcon("img\\tower\\explodingBombsUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\explodingBombUpgradeRemove.png")
+					.getImage() };
+
+	private final Image[] freezeUpgrade = {
+			new ImageIcon("img\\tower\\freezeUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\freezeUpgradeRemove.png").getImage() };
+
+	private final Image[] laserUpgrade = {
+			new ImageIcon("img\\tower\\laserUpgrade.png").getImage(),
+			new ImageIcon("img\\tower\\laserUpgradeRemove.png").getImage() };
+
+	// Background Images
+	private final Image backgroundui = new ImageIcon(
+			"img\\bg\\backgroundui.png").getImage();
+	private final Image background = new ImageIcon(
+			"img\\bg\\backgroundnogrid.png").getImage();
+	private final Image nextWaveButton = new ImageIcon("img\\bg\\nextWave.png")
+			.getImage();
+	private final Image fastForwardButton = new ImageIcon(
+			"img\\bg\\fastFowardButton.png").getImage();
+	private final Image playButton = new ImageIcon("img\\bg\\playButton.png")
+			.getImage();
+
+	// Alien and Tower Variables
+	private int startingX;
+	private int wave;
+	private int selectedTower;
+	private Timer timer;
+	private ArrayList<Alien> aliens;
+	private ArrayList<Bullet> bullets;
+	private int[][] grid;
+	private ArrayList<Tower> towers;
+	private boolean selected;
+	private int draggedXPos;
+	private int[][] waveNo;
+	private int draggedYPos;
+	private int playerLives;
+	private int playerGold;
+	private int finalWave;
+	private int draggedRow;
+	private int draggedCol;
+	private int clickedRow;
+	private int clickedColumn;
+	private int mouseMoveTower;
+	private boolean fastForward;
+	static final int SQUARE_SIZE = 27;
+	private boolean towerClicked;
+	private boolean wavePressed;
+	// private int score;
+	// private String name;
+
+	private AstroGameMain parent;
+
+	/**
+	 * Constructs an AstroDefence Object
+	 */
+	public AstroGameBoard(AstroGameMain parent) {
+		this.parent = parent;
+		// Sets up the board area
+		setPreferredSize(BOARD_SIZE);
+		timer = new Timer(35, new TimerEventHandler());
+		setBackground(new Color(200, 200, 200));
+		// Add mouse listeners and Key Listeners to the game board
+		addMouseListener(this);
+		addMouseMotionListener(this);
+		setFocusable(true);
+		requestFocusInWindow();
+
+		// Makes an array list for the Aliens and Towers so we can add bullets
+		bullets = new ArrayList<Bullet>();
+		aliens = new ArrayList<Alien>();
+		towers = new ArrayList<Tower>();
+
+		// Loads in the gameboard.txt file
+		newGame("gameboard.txt");
+
+	}
+
+	// Keeps track of the number of waves, and loads in the text file that
+	// houses the wave sizes
+
+	public void alienWaveLoader(String mazeFileName) {
+		try {
+			// Find the size of the file first to size the array
+			// Standard Java file input (better than hsa.TextInputFile)
+			BufferedReader mazeFile = new BufferedReader(new FileReader(
+					mazeFileName));
+
+			// Assume file has at least 1 line
+			int noOfRows = 1;
+			String rowStr = mazeFile.readLine();
+			int noOfColumns = rowStr.length();
+
+			// Read and count the rest of rows until the end of the file
+			while (mazeFile.readLine() != null) {
+				noOfRows++;
+			}
+			mazeFile.close();
+
+			// Set up the array
+			waveNo = new int[noOfRows][noOfColumns];
+
+			// Load in the file data into the grid (Need to re-open first)
+			// In this example the grid contains the characters '0' to '9'
+			// So to translate each character into an integer we subtract
+			// '0'
+			// If your maze has more than 10 types of squares you could use
+			// letters in your file 'a' to 'z' and then subtract 'a' to
+			// translate each letter into an integer
+			mazeFile = new BufferedReader(new FileReader(mazeFileName));
+			for (int row = 0; row < waveNo.length; row++) {
+				rowStr = mazeFile.readLine();
+				for (int column = 0; column < waveNo[0].length; column++) {
+					waveNo[row][column] = (int) (rowStr.charAt(column) - '0');
+				}
+			}
+			mazeFile.close();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, mazeFileName
+					+ " not a valid maze file", "Message - Invalid Maze File",
+					JOptionPane.WARNING_MESSAGE);
+			System.exit(0);
+		}
+	}
+
+	/**
+	 * Starts a new game
+	 */
+	public void newGame(String mazeFileName) {
+		playerGold = 350;
+		playerLives = 500;
+		if (timer.isRunning())
+			timer.stop();
+
+		fastForward = false;
+		selected = false;
+		wavePressed = false;
+		towerClicked = false;
+		aliens.clear();
+		bullets.clear();
+		towers.clear();
+		wave = 1;
+		alienWaveLoader("alienWaves.txt");
+		repaint();
+		try {
+			// Find the size of the file first to size the array
+			// Standard Java file input (better than hsa.TextInputFile)
+			BufferedReader mazeFile = new BufferedReader(new FileReader(
+					mazeFileName));
+
+			// Assume file has at least 1 line
+			int noOfRows = 1;
+			String rowStr = mazeFile.readLine();
+			int noOfColumns = rowStr.length();
+
+			// Read and count the rest of rows until the end of the file
+			while (mazeFile.readLine() != null) {
+				noOfRows++;
+			}
+			mazeFile.close();
+
+			// Set up the array
+			grid = new int[noOfRows][noOfColumns];
+
+			// Load in the file data into the grid (Need to re-open first)
+			// In this example the grid contains the characters '0' to '9'
+			// So to translate each character into an integer we subtract
+			// '0'
+			// If your maze has more than 10 types of squares you could use
+			// letters in your file 'a' to 'z' and then subtract 'a' to
+			// translate each letter into an integer
+			mazeFile = new BufferedReader(new FileReader(mazeFileName));
+			for (int row = 0; row < grid.length; row++) {
+				rowStr = mazeFile.readLine();
+				for (int column = 0; column < grid[0].length; column++) {
+					grid[row][column] = (int) (rowStr.charAt(column) - '0');
+				}
+			}
+			mazeFile.close();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, mazeFileName
+					+ " not a valid maze file", "Message - Invalid Maze File",
+					JOptionPane.WARNING_MESSAGE);
+			System.exit(0);
+		}
+	}
+
+	/**
+	 * Class for the timer event
+	 * 
+	 * @author Christian, Sina , Elliott
+	 * @version June 16th
+	 * 
+	 */
+	private class TimerEventHandler implements ActionListener {
+
+		/**
+		 * Timer event which will control the firing of bullets, and the aliens
+		 * traveling on the map
+		 * 
+		 * @param event
+		 *            the movement of aliens, firing of towers
+		 */
+		public void actionPerformed(ActionEvent event) {
+
+			// Target the aliens
+			Iterator<Tower> it2 = towers.iterator();
+			while (it2.hasNext()) {
+				Tower nextTower = it2.next();
+				nextTower.alienSelect(aliens, bullets);
+			}
+			// Shoot the bullets
+			Iterator<Bullet> it3 = bullets.iterator();
+			while (it3.hasNext()) {
+				Bullet nextBullet = it3.next();
+				nextBullet.collisionCheck(aliens);
+				if (!nextBullet.isIntact())
+					it3.remove();
+				nextBullet.move();
+			}
+			// Move the alien until it is alive
+			Iterator<Alien> it = aliens.iterator();
+			while (it.hasNext()) {
+				Alien nextAlien = it.next();
+				if (!nextAlien.isAlive()) {
+					playerGold += nextAlien.capturedGold();
+					it.remove();
+				} else if (nextAlien.move()) {
+					playerLives -= nextAlien.damageToPlayer();
+					it.remove();
+				}
+			}
+			// Stop the timer after all the aliens are off screen
+			if (aliens.size() == 0) {
+				finalWave = wave + 1;
+				bullets.clear();
+				wave++;
+				for (Tower nextTower : towers)
+					nextTower.normal();
+				timer.stop();
+				fastForward = false;
+				wavePressed = false;
+				// If the player has no more lives left, end the game
+				if (playerLives <= 0) {
+					parent.startMenu();
+
+					newGame("gameboard.txt");
+				}
+			}
+			repaint();
+		}
+	}
+
+	/**
+	 * Return the final wave number the player reached
+	 * 
+	 * @return the final wave number the plyaer reached
+	 */
+	public int waveNumber() {
+		return finalWave;
+	}
+
+	/**
+	 * Repaint the board's drawing panel
+	 * 
+	 * @param g
+	 *            The Graphics context
+	 */
+
+	public void paintComponent(Graphics g) {
+
+		super.paintComponent(g);
+		g.drawImage(background, 0, 0, null);
+
+		// Draw all the aliens, towers and bullets
+		for (Alien nextAlien : aliens)
+			nextAlien.draw(g);
+		for (Tower nextTower : towers)
+			nextTower.draw(g);
+		for (Bullet nextBullet : bullets)
+			nextBullet.draw(g);
+
+		// Draws the attack radius of the tower
+		if (towerClicked && mouseMoveTower == 0) {
+
+			Tower selected = towers.get(grid[clickedRow][clickedColumn] - 2);
+			int range = (int) selected.range();
+
+			g.setColor(transGray1);
+			g.fillOval((int) selected.xPos - range,
+					(int) selected.yPos - range, range * 2, range * 2);
+			g.setColor(Color.gray);
+			g.drawOval((int) selected.xPos - range,
+					(int) selected.yPos - range, range * 2, range * 2);
+		}
+
+		// Draw tower one being dragged, blacked out or in color
+		if (grid[draggedRow][draggedCol] != 1 && selected && selectedTower == 1) {
+			g.drawImage(towerOneDrag[1], draggedXPos, draggedYPos, null);
+			g.setColor(Color.BLACK);
+			g.fillRect((int) draggedXPos + 10, (int) (draggedYPos), 6, 14);
+			g.setColor(transGray2);
+			g.fillOval(draggedXPos - 500 + 13, draggedYPos - 500 + 13, 1000,
+					1000);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 500 + 13, draggedYPos - 500 + 13, 1000,
+					1000);
+		} else if (selected && selectedTower == 1) {
+			g.drawImage(towerOneDrag[0], draggedXPos, draggedYPos, null);
+			g.setColor(Color.BLACK);
+			g.fillRect((int) draggedXPos + 10, (int) (draggedYPos), 6, 14);
+			g.setColor(transGray1);
+			g.fillOval(draggedXPos - 500 + 13, draggedYPos - 500 + 13, 1000,
+					1000);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 500 + 13, draggedYPos - 500 + 13, 1000,
+					1000);
+		}
+		// Draw tower two being dragged, blacked out or in color
+		else if (grid[draggedRow][draggedCol] != 1 && selected
+				&& selectedTower == 2) {
+			g.drawImage(towerTwoDrag[1], draggedXPos, draggedYPos, null);
+			g.setColor(Color.BLACK);
+			g.fillRect((int) draggedXPos + 10, (int) (draggedYPos), 6, 14);
+			g.setColor(transGray2);
+			g.fillOval(draggedXPos - 100 + 13, draggedYPos - 100 + 13, 200, 200);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 100 + 13, draggedYPos - 100 + 13, 200, 200);
+
+		} else if (selected && selectedTower == 2) {
+			g.drawImage(towerTwoDrag[0], draggedXPos, draggedYPos, null);
+			g.setColor(Color.BLACK);
+			g.fillRect((int) draggedXPos + 10, (int) (draggedYPos), 6, 14);
+			g.setColor(transGray1);
+			g.fillOval(draggedXPos - 100 + 13, draggedYPos - 100 + 13, 200, 200);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 100 + 13, draggedYPos - 100 + 13, 200, 200);
+		}
+		// Draw tower three being dragged, blacked out or in color
+		else if (grid[draggedRow][draggedCol] != 1 && selected
+				&& selectedTower == 3) {
+			g.drawImage(towerThreeDrag[1], draggedXPos, draggedYPos, null);
+			g.setColor(transGray2);
+			g.fillOval(draggedXPos - 200 + 13, draggedYPos - 200 + 13, 400, 400);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 200 + 13, draggedYPos - 200 + 13, 400, 400);
+		} else if (selected && selectedTower == 3) {
+			g.drawImage(towerThreeDrag[0], draggedXPos, draggedYPos, null);
+			g.setColor(transGray1);
+			g.fillOval(draggedXPos - 200 + 13, draggedYPos - 200 + 13, 400, 400);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 200 + 13, draggedYPos - 200 + 13, 400, 400);
+		}
+		// Draw tower four being dragged, blacked out or in color
+		else if (grid[draggedRow][draggedCol] != 1 && selected
+				&& selectedTower == 4) {
+			g.drawImage(towerFourDrag[1], draggedXPos, draggedYPos, null);
+			g.setColor(transGray2);
+			g.fillOval(draggedXPos - 250 + 13, draggedYPos - 250 + 13, 500, 500);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 250 + 13, draggedYPos - 250 + 13, 500, 500);
+		} else if (selected && selectedTower == 4) {
+			g.drawImage(towerFourDrag[0], draggedXPos, draggedYPos, null);
+			g.setColor(transGray1);
+			g.fillOval(draggedXPos - 250 + 13, draggedYPos - 250 + 13, 500, 500);
+			g.setColor(Color.GRAY);
+			g.drawOval(draggedXPos - 250 + 13, draggedYPos - 250 + 13, 500, 500);
+		}
+		g.drawImage(backgroundui, 0, 0, null);
+
+		// Draw the costs for the towers
+		g.setFont(new Font("Impact", Font.PLAIN, 11));
+		g.setColor(Color.yellow);
+		g.drawString("$100", 740, 500);
+		g.drawString("$150", 795, 500);
+		g.drawString("$175", 835, 500);
+		g.drawString("$400", 885, 500);
+
+		g.setFont(new Font("Impact", Font.PLAIN, 22));
+
+		// Draw the next wave button
+		if (!timer.isRunning()) {
+			g.drawImage(nextWaveButton, 750, 540, null);
+			g.setColor(Color.black);
+			g.drawString("Next Wave", 785, 640);
+
+		}
+
+		// Displays the Graphics to speed up, and slow down
+		if (!fastForward && wavePressed) {
+			g.drawImage(fastForwardButton, 793, 560, null);
+			g.drawString("Fast Forward", 775, 645);
+		} else if (fastForward && wavePressed) {
+			g.drawImage(playButton, 793, 560, null);
+			g.drawString("Normal", 795, 645);
+		}
+
+		// Displays the players live, gold and current wave
+		g.setColor(Color.blue);
+		g.drawImage(towerOne, 730, 500, null);
+		g.drawImage(towerTwo, 790, 503, null);
+		g.drawImage(towerThree, 830, 510, null);
+		g.drawImage(towerFour, 880, 501, null);
+		g.setColor(Color.yellow);
+		g.drawString("Player Gold: " + playerGold, 740, 450);
+		g.setColor(Color.red);
+		g.drawString("Player Lives: " + playerLives, 740, 480);
+		g.setColor(Color.blue);
+		g.drawString("Wave Number: " + wave, 740, 420);
+
+		// Draw the stats for a tower
+		if (towerClicked && mouseMoveTower == 0) {
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2).isLaser()) {
+				g.setColor(Color.blue);
+				g.fillRect(750, 150, 150, 50);
+			}
+
+			// List the stats for the tower
+			g.setColor(Color.yellow);
+			g.fillRect(750, 300, 150, 50);
+
+			// List the sell price and draw the button
+			g.setColor(Color.black);
+			g.drawString(
+					"Sell for $"
+							+ towers.get(grid[clickedRow][clickedColumn] - 2)
+									.towerCost() / 2, 755, 330);
+			g.setFont(new Font("Arial", Font.PLAIN, 15));
+
+			g.drawString("Tower " + (grid[clickedRow][clickedColumn] - 1), 750,
+					30);
+			g.drawString(
+					"Number of Hits: "
+							+ towers.get(grid[clickedRow][clickedColumn] - 2)
+									.noOfHits(), 750, 50);
+			g.drawString(
+					"Range: "
+							+ towers.get(grid[clickedRow][clickedColumn] - 2)
+									.range(), 750, 70);
+			g.drawString(
+					"Damage: "
+							+ towers.get(grid[clickedRow][clickedColumn] - 2)
+									.damage(), 750, 90);
+			g.setFont(new Font("Arial", Font.PLAIN, 10));
+
+			// Draw all the upgrades for the towers
+			// Laser Upgrade
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFiringUpgrade()
+					&& !towers.get(grid[clickedRow][clickedColumn] - 2)
+							.isLaser()) {
+
+				g.drawImage(firingUpgrade[0], 750, 150, null);
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFiringUpgrade()
+					&& !towers.get(grid[clickedRow][clickedColumn] - 2)
+							.isLaser()) {
+
+				g.drawImage(firingUpgrade[1], 750, 150, null);
+			}
+			// Damage Upgrade
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isDamageUpgrade()) {
+
+				g.drawImage(damageUpgrade[0], 750, 200, null);
+
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isDamageUpgrade()) {
+
+				g.drawImage(damageUpgrade[1], 750, 200, null);
+			}
+			// Range upgrade
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isRangeUpgrade()) {
+
+				g.drawImage(rangeUpgrade[0], 750, 250, null);
+
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isRangeUpgrade()) {
+
+				g.drawImage(rangeUpgrade[1], 750, 250, null);
+
+			}
+
+			// Bomb upgrade
+			g.setColor(Color.GRAY);
+			if (towers.get(grid[clickedRow][clickedColumn] - 2).isExploding()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 1) {
+				g.drawImage(exploadingBombsUpgrade[1], 750, 100, null);
+			}
+
+			else if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isExploding()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 1) {
+				g.drawImage(exploadingBombsUpgrade[0], 750, 100, null);
+			}
+
+			// Freeze upgrade
+			else if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFreezing()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 3) {
+				g.drawImage(freezeUpgrade[0], 750, 100, null);
+			}
+
+			else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFreezing()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 3) {
+				g.drawImage(freezeUpgrade[1], 750, 100, null);
+			}
+
+			// Laser upgrade
+			else if (!towers.get(grid[clickedRow][clickedColumn] - 2).isLaser()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 4) {
+				g.drawImage(laserUpgrade[0], 750, 100, null);
+			}
+
+			else if (towers.get(grid[clickedRow][clickedColumn] - 2).isLaser()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 4) {
+				g.drawImage(laserUpgrade[1], 750, 100, null);
+			}
+
+		}
+
+		// Display the stats for all the towers
+		if (mouseMoveTower == 1) {
+			g.drawString("Sniper Tower", 750, 50);
+			g.setFont(new Font("Arial", Font.PLAIN, 17));
+			g.drawString("Firing Rate: 0.84s/bullet", 740, 70);
+			g.drawString("Damage: 150", 740, 90);
+		} else if (mouseMoveTower == 2) {
+			g.drawString("Machine Gun", 750, 50);
+			g.drawString("Tower", 790, 70);
+			g.setFont(new Font("Arial", Font.PLAIN, 17));
+			g.drawString("Firing Rate: 0.28s/bullet", 740, 90);
+			g.drawString("Damage: 250", 740, 110);
+		} else if (mouseMoveTower == 3) {
+			g.drawString("Slow Tower", 750, 50);
+			g.setFont(new Font("Arial", Font.PLAIN, 17));
+			g.drawString("Description:", 740, 70);
+			g.drawString("Reduces enemy to", 740, 90);
+			g.drawString("1/2 speed", 740, 110);
+			g.drawString("Damage: 0", 740, 130);
+		} else if (mouseMoveTower == 4) {
+			g.drawString("Super Tower", 750, 50);
+			g.setFont(new Font("Arial", Font.PLAIN, 17));
+			g.drawString("Firing Rate: 0.14s/bullet", 740, 70);
+			g.drawString("Damage: 100", 740, 90);
+
+		}
+
+	} // paint component method
+
+	/**
+	 * Mouse pressed event This will check to see which tower is selected for
+	 * purchase
+	 */
+	public void mousePressed(MouseEvent event) {
+		Point pressedPoint = event.getPoint();
+		// Checks to see which tower has been pressed
+		if (pressedPoint.x > 730 && pressedPoint.x < 770
+				&& pressedPoint.y < 540 && pressedPoint.y > 500
+				&& playerGold >= 100) {
+			selected = true;
+			selectedTower = 1;
+			towerClicked = false;
+		} else if (pressedPoint.x > 790 && pressedPoint.x < 830
+				&& pressedPoint.y < 543 && pressedPoint.y > 503
+				&& playerGold >= 150) {
+			selected = true;
+			selectedTower = 2;
+			towerClicked = false;
+		} else if (pressedPoint.x > 830 && pressedPoint.x < 870
+				&& pressedPoint.y < 550 && pressedPoint.y > 510
+				&& playerGold >= 175) {
+			selected = true;
+			selectedTower = 3;
+			towerClicked = false;
+		} else if (pressedPoint.x > 880 && pressedPoint.x < 920
+				&& pressedPoint.y < 541 && pressedPoint.y > 501
+				&& playerGold >= 400) {
+			selected = true;
+			selectedTower = 4;
+			towerClicked = false;
+		}
+	}
+
+	/**
+	 * Places a tower in a spot if applicable
+	 */
+	public void mouseReleased(MouseEvent event) {
+		Point releasedPoint = event.getPoint();
+		repaint();
+
+		// Checks to see if the mouse is on screen
+		if (releasedPoint.x <= 729 && releasedPoint.x >= 0
+				&& releasedPoint.y >= 0 && releasedPoint.y <= 675) {
+			int col = (int) ((double) releasedPoint.x / SQUARE_SIZE);
+			int row = (int) ((double) releasedPoint.y / SQUARE_SIZE);
+			// If the first tower is selected, see if you can place it
+			if (grid[row][col] == 1 && selected) {
+				if (selectedTower == 1) {
+					grid[row][col] = towers.size() + 2;
+
+					if (fastForward)
+						towers.add(new Tower1(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 60,
+								210));
+					else
+						towers.add(new Tower1(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 15,
+								840));
+					playerGold -= 100;
+				}
+				// If the second tower is selected, see if you can place it
+				else if (selectedTower == 2) {
+					grid[row][col] = towers.size() + 2;
+
+					if (fastForward)
+						towers.add(new Tower2(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 60,
+								105));
+					else
+						towers.add(new Tower2(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 15,
+								420));
+					playerGold -= 150;
+				}
+
+				// If the third tower is selected, see if you can place it
+				else if (selectedTower == 3) {
+					grid[row][col] = towers.size() + 2;
+					if (fastForward)
+						towers.add(new Tower3(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 60,
+								140));
+					else
+						towers.add(new Tower3(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 15,
+								560));
+					playerGold -= 175;
+
+				}
+
+				// If the fourth tower is selected, see if you can place it
+				else if (selectedTower == 4) {
+					grid[row][col] = towers.size() + 2;
+					if (fastForward)
+						towers.add(new Tower4(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 60,
+								70));
+					else
+						towers.add(new Tower4(col * SQUARE_SIZE + SQUARE_SIZE
+								/ 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, 15,
+								280));
+					playerGold -= 400;
+				}
+
+			}
+		}
+
+		selected = false;
+
+	}
+
+	/**
+	 * Mouse clicked event Check to see if a tower is clicked, or an upgrade is
+	 * clicked Also spawns in aliens
+	 */
+	public void mouseClicked(MouseEvent event) {
+		// Pointer
+		Point clickedPoint = event.getPoint();
+		// If the next wave button is pressed, spawn in the aliens
+		if (clickedPoint.getX() >= 798 && clickedPoint.getX() <= 850
+				&& clickedPoint.getY() >= 586 && clickedPoint.getY() <= 615
+				&& !timer.isRunning() && !wavePressed) {
+			fastForward = false;
+			wavePressed = true;
+			startingX = -50;
+			if (wave < 40) {
+				for (int alienIndex = 0; alienIndex < waveNo[wave].length; alienIndex++) {
+					if (waveNo[wave][alienIndex] == 1)
+						aliens.add(new Alien1(startingX));
+					else if (waveNo[wave][alienIndex] == 2)
+						aliens.add(new Alien2(startingX));
+					else if (waveNo[wave][alienIndex] == 3)
+						aliens.add(new Alien3(startingX));
+					else if (waveNo[wave][alienIndex] == 4)
+						aliens.add(new Alien4(startingX));
+					else if (waveNo[wave][alienIndex] == 5)
+						aliens.add(new Alien5(startingX));
+					startingX -= 50;
+				}
+			}
+			// If the wave > 40, generate waves from an algorithm
+			else {
+				for (int waveLength = wave; waveLength > 20; waveLength--) {
+					aliens.add(new Alien1(startingX));
+					aliens.add(new Alien2(startingX));
+					aliens.add(new Alien3(startingX));
+					aliens.add(new Alien4(startingX));
+					aliens.add(new Alien5(startingX));
+					startingX -= 50;
+				}
+			}
+			timer.start();
+
+			// Fast forwards the aliens movement and tower fire rates
+		} else if (!fastForward && clickedPoint.x <= 855
+				&& clickedPoint.x >= 790 && clickedPoint.y > 550
+				&& clickedPoint.y < 635 && wavePressed) {
+			fastForward = true;
+			for (Alien nextAlien : aliens)
+				nextAlien.fastForward();
+			for (Tower nextTower : towers)
+				nextTower.fastForward();
+			for (Bullet nextBullet : bullets)
+				nextBullet.fastForward();
+		} else if (fastForward && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y > 550 && clickedPoint.y < 600 && wavePressed) {
+			fastForward = false;
+			for (Alien nextAlien : aliens) {
+				nextAlien.normal();
+			}
+			for (Tower nextTower : towers)
+				nextTower.normal();
+			for (Bullet nextBullet : bullets)
+				nextBullet.normal();
+		}
+
+		// Checks to see if a tower is clicked
+		if (!towerClicked && clickedPoint.x < 729 && clickedPoint.x > 0
+				&& clickedPoint.y < 675 && clickedPoint.y > 0) {
+			clickedRow = (int) ((double) clickedPoint.y / SQUARE_SIZE);
+			clickedColumn = (int) ((double) clickedPoint.x / SQUARE_SIZE);
+			if (grid[clickedRow][clickedColumn] >= 2)
+				towerClicked = true;
+			else
+				towerClicked = false;
+		} else if (towerClicked && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y < 350 && clickedPoint.y > 300) {
+			playerGold += (int) (towers
+					.get(grid[clickedRow][clickedColumn] - 2).towerCost() / 2);
+			towerClicked = false;
+			towers.remove(grid[clickedRow][clickedColumn] - 2);
+			for (int rowNo = 0; rowNo < 25; rowNo++) {
+				for (int columnNo = 0; columnNo < SQUARE_SIZE; columnNo++) {
+					if (grid[rowNo][columnNo] > grid[clickedRow][clickedColumn])
+						grid[rowNo][columnNo]--;
+				}
+			}
+			grid[clickedRow][clickedColumn] = 1;
+
+		}
+		// Add firing upgrade
+		else if (towerClicked && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y > 150 && clickedPoint.y < 200
+				&& !towers.get(grid[clickedRow][clickedColumn] - 2).isLaser()) {
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFiringUpgrade() && playerGold >= 400) {
+				playerGold -= 400;
+				towers.get(grid[clickedRow][clickedColumn] - 2).firingUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(200);
+			}
+			// Remove firing upgrade
+			else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFiringUpgrade()) {
+				playerGold += 200;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeFiringUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-200);
+			}
+		}
+		// Add damage upgrade
+		else if (towerClicked && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y > 200 && clickedPoint.y < 250) {
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isDamageUpgrade() && playerGold >= 300) {
+				playerGold -= 300;
+				towers.get(grid[clickedRow][clickedColumn] - 2).damageUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(150);
+			}
+			// remove damage upgrade
+			else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isDamageUpgrade()) {
+				playerGold += 150;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeDamageUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-150);
+			}
+		}
+		// Add range upgrade
+		else if (towerClicked && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y > 250 && clickedPoint.y < 300) {
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isRangeUpgrade() && playerGold >= 200) {
+				playerGold -= 200;
+				towers.get(grid[clickedRow][clickedColumn] - 2).rangeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(+100);
+			}
+			// Remove range upgrade
+			else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isRangeUpgrade()) {
+				playerGold += 100;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeRangeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-100);
+			}
+		}
+
+		// Checks to see how many upgrades teh tower has, and depending
+		// On the amount of upgrades, increase the towers selling
+		// Price to compensate for upgrades
+		else if (towerClicked && clickedPoint.x < 900 && clickedPoint.x > 750
+				&& clickedPoint.y > 100 && clickedPoint.y < 150) {
+			if (!towers.get(grid[clickedRow][clickedColumn] - 2).isExploding()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 1
+					&& playerGold >= 300) {
+				playerGold -= 300;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.explodeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(150);
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isExploding()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 1) {
+				playerGold += 150;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeExplodeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-150);
+			} else if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFreezing()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 3
+					&& playerGold >= 200) {
+				playerGold -= 200;
+				towers.get(grid[clickedRow][clickedColumn] - 2).freezeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(100);
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isFreezing()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 3) {
+				playerGold += 100;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeFreezeUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-100);
+			} else if (!towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isLaser()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 4
+					&& playerGold >= 600) {
+				playerGold -= 600;
+				towers.get(grid[clickedRow][clickedColumn] - 2).laserUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(300);
+			} else if (towers.get(grid[clickedRow][clickedColumn] - 2)
+					.isLaser()
+					&& towers.get(grid[clickedRow][clickedColumn] - 2).type() == 4) {
+				playerGold += 300;
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.removeLaserUpgrade();
+				towers.get(grid[clickedRow][clickedColumn] - 2)
+						.changeTowerCost(-300);
+			}
+		} else
+			towerClicked = false;
+	}
+
+	/**
+	 * checks to see if the mouse has reentered the screen
+	 */
+	public void mouseEntered(MouseEvent event) {
+	}
+
+	/**
+	 * checks to see if the mouse has left the screen
+	 */
+	public void mouseExited(MouseEvent event) {
+	}
+
+	/**
+	 * check to see if the mouse moved
+	 */
+	public void mouseMoved(MouseEvent event) {
+		Point mousePoint = event.getPoint();
+
+		// Move tower 1 and add the hand cursor
+		if (mousePoint.x > 730 && mousePoint.x < 770 && mousePoint.y > 500
+				&& mousePoint.y < 540) {
+			mouseMoveTower = 1;
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+		// Move tower 2 and add the hand cursor
+		else if (mousePoint.x > 790 && mousePoint.x < 830 && mousePoint.y > 503
+				&& mousePoint.y < 543) {
+			mouseMoveTower = 2;
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+		// Move tower 3 and add the hand cursor
+		else if (mousePoint.x > 830 && mousePoint.x < 880 && mousePoint.y > 510
+				&& mousePoint.y < 550) {
+			mouseMoveTower = 3;
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+		// Move tower 4 and add the hand cursor
+		else if (mousePoint.x > 880 && mousePoint.x < 920 && mousePoint.y > 501
+				&& mousePoint.y < 541) {
+			mouseMoveTower = 4;
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+		} else {
+			mouseMoveTower = 0;
+			setCursor(Cursor.getDefaultCursor());
+		}
+		repaint();
+
+	}
+
+	/**
+	 * Checks to see if the mouse is clicked and moved
+	 */
+	public void mouseDragged(MouseEvent event) {
+		// Drag a tower around the screen
+		draggedXPos = event.getX() - SQUARE_SIZE / 2;
+		draggedYPos = event.getY() - SQUARE_SIZE / 2;
+		if (event.getX() <= 929 && event.getX() >= 0 && event.getY() >= 0
+				&& event.getY() < 675) {
+			draggedCol = (int) ((double) event.getX() / SQUARE_SIZE);
+			draggedRow = (int) ((double) event.getY() / SQUARE_SIZE);
+		}
+		repaint();
+	}
+
+}

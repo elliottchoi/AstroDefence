@@ -1,0 +1,191 @@
+// Import graphics and ArrayList
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * Subclass Tower4 inherits Tower data and methods
+ * @author Elliott, Sina, and Christian 
+ * @version June 16, 2014
+ */
+public class Tower4 extends Tower
+{ 
+	/**
+	 * Construct Tower 4 object
+	 * @param x the x coordinate of the Tower4
+	 * @param y the y coordinate of the Tower4
+	 * @param speed the speed of the Tower4 bullets
+	 * @param firingRate the firing rate of the Tower4
+	 */
+	public Tower4(int x, int y, int speed, int firingRate)
+	{
+		super(x,y, firingRate, 250, 400,
+				100, speed, 10, 20, 30, "tower4Drag");
+		
+		this.type=4;
+		
+	}
+	/**
+	 * Overrides the draw method for the Tower
+	 */
+	public void draw(Graphics g)
+	{
+	
+		// Graphics for drawing sharper edges
+		Graphics2D g2 = (Graphics2D) g;
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setColor(Color.RED);
+		
+		
+				// If the tower has an alien to fire at, calculate the amount to rotate the tower image below
+				if (this.hasAlien)
+				{
+					if (this.closestAlien.onScreen()&&this.alienInRange(closestAlien)&&closestAlien.isAlive())
+					{
+				direction = Math.atan((closestAlien.xPos()-this.xPos)
+						/ (this.yPos - closestAlien.yPos()));
+				if (this.yPos<closestAlien.yPos())
+				{
+					direction += Math.PI;
+
+				}
+				else if (this.yPos == closestAlien.yPos())
+				{
+					if (this.xPos > closestAlien.xPos())
+						direction = 3 * Math.PI / 2;
+					else if (this.xPos < closestAlien.xPos())
+						direction = Math.PI / 2;
+				}
+					}
+				}
+				
+	
+		// Rotates the graphics context by the direction then rotates back
+		g2.rotate (direction, (int) xPos, (int) yPos);
+		g.drawImage(towerImage,(int) (xPos-13), (int) (yPos - 13),
+				null);
+		// If it has an alien and a laser upgrade and the alien is valid then draw a laser connecting the tower to it
+		if (this.hasAlien)
+		{
+			if (this.closestAlien.onScreen()&&this.alienInRange(closestAlien)&&closestAlien.isAlive()&&laserUpgrade)
+			g2.fillRect((int) xPos, (int)(yPos-this.distanceClosestAlien()-9), 4, (int)this.distanceClosestAlien());
+			
+		}
+		
+		g2.rotate (-direction,(int) xPos, (int) yPos);
+	}
+	/**
+	 * Calculates the distance to the closest alien squared
+	 * @return the distance to the closest alien squared
+	 */
+	public double distanceClosestAlien()
+	{
+		
+		return Math.sqrt((closestAlien.xPos() - this.xPos)*(closestAlien.xPos() - this.xPos)+(closestAlien.yPos() - this.yPos)*(closestAlien.yPos() - this.yPos));
+	}
+	
+	
+	/**
+	 * Overrides the tower method to make a laser if the tower is upgraded
+	 */
+	public void alienSelect(ArrayList<Alien> aliens, ArrayList <Bullet> bullets)
+	{
+		// Increase the time of the tower by the time interval for the timerEventHandler
+		this.time += 35;
+
+		// Iterator to go through all the aliens
+		Iterator<Alien> it = aliens.iterator();
+		// If the tower doesn't have an alien to fire at, try to find one
+		if (!this.hasAlien)
+		{
+
+			int index = 0;
+			int indexOfClosestAlien = -1;
+			// Goes through the aliens until there is one that is alive, on screen and in range
+			while (!(this.hasAlien) && it.hasNext())
+			{
+
+				Alien nextAlien = it.next();
+				if (this.alienInRange(nextAlien) && nextAlien.isAlive()&&nextAlien.onScreen())
+				{
+					indexOfClosestAlien = index;
+					this.hasAlien = true;
+				}
+				index++;
+			}
+			// If no alien meets the condition, the tower doesn't have an alien to fire at
+
+			if (indexOfClosestAlien == -1)
+				this.hasAlien = false;
+			// Otherwise, keep going until the closest alien is found
+			else
+			{
+				// Initially the closest alien is the alien that was in range, alive and on screen from the previous loop
+				closestAlien = aliens.get(indexOfClosestAlien);
+				// Go through the remaining aliens and if the distance from the alien to the tower is less than the closest alien
+				// it becomes the new closest alien
+
+				while (it.hasNext())
+				{
+					Alien nextAlien = it.next();
+					if ((nextAlien.xPos() - this.xPos)
+							* (nextAlien.xPos() - this.xPos)
+							+ (nextAlien.yPos() - this.yPos)
+							* (nextAlien.yPos() - this.yPos) < (closestAlien
+							.xPos() - this.xPos)
+							* (closestAlien.xPos() - this.xPos)
+							+ (closestAlien.yPos() - this.yPos)
+							* (closestAlien.yPos() - this.yPos)
+							&& nextAlien.isAlive()&&nextAlien.onScreen())
+						closestAlien = nextAlien;
+				}
+				this.time=0;
+				
+				
+			}
+		}
+		// If the tower already has an alien to fire at
+		if (this.hasAlien)
+		{
+			// If the closest alien is in range, alive an don screen then attack it
+			if (this.alienInRange(closestAlien) && closestAlien.isAlive()&&closestAlien.onScreen())
+			{
+				// If it doesn't have a laser upgrade, fire a regular bullet
+				if (this.time % firingRate == 0&&!laserUpgrade)
+				{
+					bullets.add(new Bullet(this.xPos, this.yPos, this.sizeOfBullets,
+							this.speed, this.damage, this.closestAlien,this));
+					
+				}
+				// Otherwise just take damage since the laser inflicts constant damage
+				else if (laserUpgrade)
+					closestAlien.takeDamage(this.damage);
+			}
+			else
+				// Otherwise set the tower to find a new alien to fire at the next time the method is called
+			this.hasAlien = false;
+		}
+		
+		
+
+	}
+	/**
+	 * Overrides Tower method since Tower4 doesn't have explode upgrade
+	 */
+	public boolean isExploding()
+	{
+		return false;
+	}
+	/**
+	 * Overrides Tower method since Tower4 doesn't have freeze upgrade
+	 */
+	public boolean isFreezing()
+	{
+		return false;
+	}
+	
+}

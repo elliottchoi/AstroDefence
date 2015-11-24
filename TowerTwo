@@ -1,0 +1,40 @@
+/**
+ * Subclass inherits data and methods from Tower for the Machine Gun Tower (Tower 2)
+ * @author Elliott, Sina, Christian
+ * @version June 16, 2014
+ */
+public class Tower2 extends Tower {
+	
+/**
+ * Constructs a Tower2 object
+ * @param x the x coordinate of the Tower2
+ * @param y the y coordinate of the Tower2
+ * @param speed the speed of the Tower2 bullets
+ * @param firingRate the firing rate of Tower2
+ */
+	public Tower2(int x, int y, int speed, int firingRate) {
+		super(x, y, firingRate, 100, 150, 225, speed, 10, 20, 30, "tower2Drag");
+		this.type = 2;
+
+	}
+/**
+ * Overrides Tower method and returns false since Tower2 can't have explode upgrade
+ */
+	public boolean isExploding() {
+		return false;
+	}
+
+	/**
+	 * Overrides the Tower method and returns false since Tower2 can't have freezing
+	 */
+	public boolean isFreezing() {
+		return false;
+	}
+ /**
+  * Overrides the Tower method and returns false since Tower2 can't have laser upgrade
+  */
+	public boolean isLaser() {
+		return false;
+	}
+
+}

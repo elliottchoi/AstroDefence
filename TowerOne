@@ -1,0 +1,95 @@
+// Import ArrayLists
+import java.util.ArrayList;
+
+/**
+ * New methods for Subclass Bomb which inherits data and methods from Bullet
+ * @author Sina, Christian and Elliott
+ * @version June 16, 2014
+ */
+public class Bomb extends Bullet
+
+{
+	// Determines if the bomb exploded yet
+	private boolean explode; 
+	/**
+	 * Constructs a Bomb object
+	 * @param x the x coordinate of the Bomb
+	 * @param y the y coordinate of the Bomb
+	 * @param alien the alien the Bomb is aimed at
+	 * @param tower the tower from which the bomb was shot
+	 */
+	public Bomb(double x, double y, Alien alien, Tower tower)
+	{
+		
+		super (x,y,10,15,100,alien,tower);
+	
+	}
+	/**
+	 * Overrides the collisionCheck for the regular Bullet by having an extra step where the bullet explodes
+	 */
+	public void collisionCheck(ArrayList<Alien> aliens)
+	{
+		
+		this.directionAdjust();
+		// If the bullet has not exploded yet, we check every alien to see whether or not it has collided with an alien or not
+		if (!explode)
+		{
+		for (Alien nextAlien : aliens)
+		{
+			if ((this.xPos - nextAlien.xPos()) * (this.xPos - nextAlien.xPos())
+					+ (this.yPos - nextAlien.yPos())
+					* (this.yPos - nextAlien.yPos()) <= (this.size/2.0+27/Math.sqrt(2)+this.speed/2)*(this.size/2.0+27/Math.sqrt(2)+this.speed/2)
+					&& nextAlien.isAlive())
+			{
+				// Now the bullet explodes and the boolean for explode becomes true
+				this.explode = true; 
+				this.explode();
+				
+			
+			
+			}
+		}
+		// If the bullet is off the board then it is no longer intact
+
+		if (this.xPos < 0 || this.yPos < 0||this.xPos>729||this.yPos>675)
+		{
+			this.intact = false;
+		}
+		}
+		// If the bullet has already exploded, then do a collision check again but with its increased size
+		else 
+		
+		{
+			// Check each alien to see if it is close enough to the bullet
+			for (Alien nextAlien : aliens)
+			{
+				if ((this.xPos - nextAlien.xPos()) * (this.xPos - nextAlien.xPos())
+						+ (this.yPos - nextAlien.yPos())
+						* (this.yPos - nextAlien.yPos()) <= (this.size/2.0+27/Math.sqrt(2)+this.speed/2)*(this.size/2.0+27/Math.sqrt(2)+this.speed/2)
+						&& nextAlien.isAlive())
+				{
+					// If the alien is close enough then it takes damage and the tower gets an extra hit
+					nextAlien.takeDamage(this.damage);
+					tower.increaseNoOfHits();
+				
+				
+				}
+			}
+			this.intact = false;
+		}
+			
+
+	}
+
+
+	
+	/**
+	 * Explode method stops the bullet and blows it up to a larger size so it damages more aliens
+	 */
+	public void explode()
+	{
+		this.size = 100*Math.sqrt(2);
+		this.speed=0;
+	}
+	
+}

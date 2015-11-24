@@ -1,0 +1,130 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * Subclass inherits Tower data and methods for Tower1
+ * @author Sina, Christian and Elliott
+ * @version June 16,2014
+ */
+public class Tower1 extends Tower
+{  
+	/**
+	 * Constructs a Tower1 object
+	 * @param x the x coordinate of the Tower1
+	 * @param y the y coordinate of the Tower1
+	 * @param speed the speed of the Tower1 bullets
+	 * @param firingRate the firing rate of the Tower1
+	 */
+	public Tower1(int x, int y, int speed, int firingRate)
+	{
+		super(x,y, firingRate, 500, 100,
+				150, speed, 10, 20, 30, "tower1Drag");
+		
+		this.type=1;
+		
+	}
+	/**
+	 * Overrides the Tower alienSelect method for the Tower1 so it shoots Bombs if it has the explode upgrade
+	 */
+	public void alienSelect(ArrayList<Alien> aliens, ArrayList <Bullet> bullets)
+	{
+		// Increase the time of the tower by the time interval for the timerEventHandler
+		this.time += 35;
+		// Iterator to go through all the aliens
+		Iterator<Alien> it = aliens.iterator();
+		// If the tower doesn't have an alien to fire at, try to find one
+		if (!this.hasAlien)
+		{
+
+			int index = 0;
+			int indexOfClosestAlien = -1;
+			// Goes through the aliens until there is one that is alive, on screen and in range
+			while (!(this.hasAlien) && it.hasNext())
+			{
+
+				Alien nextAlien = it.next();
+				if (this.alienInRange(nextAlien) && nextAlien.isAlive()&&nextAlien.onScreen())
+				{
+					indexOfClosestAlien = index;
+					this.hasAlien = true;
+				}
+				index++;
+			}
+			// If no alien meets the condition, the tower doesn't have an alien to fire at
+
+			if (indexOfClosestAlien == -1)
+				this.hasAlien = false;
+			// Otherwise, keep going until the closest alien is found
+			else
+			{
+				// Initially the closest alien is the alien that was in range, alive and on screen from the previous loop
+				closestAlien = aliens.get(indexOfClosestAlien);
+				// Go through the remaining aliens and if the distance from the alien to the tower is less than the closest alien
+				// it becomes the new closest alien
+
+				while (it.hasNext())
+				{
+					Alien nextAlien = it.next();
+					if ((nextAlien.xPos() - this.xPos)
+							* (nextAlien.xPos() - this.xPos)
+							+ (nextAlien.yPos() - this.yPos)
+							* (nextAlien.yPos() - this.yPos) < (closestAlien
+							.xPos() - this.xPos)
+							* (closestAlien.xPos() - this.xPos)
+							+ (closestAlien.yPos() - this.yPos)
+							* (closestAlien.yPos() - this.yPos)
+							&& nextAlien.isAlive()&&nextAlien.onScreen())
+						closestAlien = nextAlien;
+				}
+				this.time = 0;
+			}
+		}
+		if (this.hasAlien)
+		{
+			// If the alien is on the screen, alive, in range and the firingRate time has passed, then fire a bullet at the alien
+			if (this.alienInRange(closestAlien) && closestAlien.isAlive()&&closestAlien.onScreen())
+			{
+				if (this.time % firingRate == 0)
+				{
+				// If the tower has an explode upgrade, fire a bullet, otherwise fire a bomb
+					if (!explodeUpgrade)
+					bullets.add(new Bullet(this.xPos, this.yPos, this.sizeOfBullets,
+							this.speed, this.damage, this.closestAlien,this));
+					else
+						bullets.add(new Bomb(this.xPos, this.yPos, this.closestAlien,this));
+				}
+				
+					
+			}
+			// Otherwise set the tower to find a new alien to fire at the next time the method is called
+			else
+				this.hasAlien = false;
+		}
+
+		
+
+	}
+	
+	
+
+
+/**
+ * Overrides the Tower method and returns false since Tower1 can't have freeze upgrade
+ */
+	public boolean isFreezing()
+	{
+		return false;
+	}
+/**
+ * Overrides the Tower method and returns false since Tower1 can't have laser upgrade	
+ */
+	public boolean isLaser()
+	{
+		return false;
+	}
+
+	
+
+}
+
+        

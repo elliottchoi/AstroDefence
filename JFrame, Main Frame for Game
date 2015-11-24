@@ -1,0 +1,263 @@
+// Extra imports required for GUI code
+import java.awt.*;
+
+import javax.swing.*;
+
+import java.awt.event.*;
+
+/**
+ * The AstroDefenceGameMain Allows the user to load in the gameboard class and
+ * creates the menu screens/layout A simple tower Defence game that is space
+ * centered around space
+ * 
+ * @author Elliott Choi, Sina Abbasi, and Christian Strilchuk
+ * @version November 2015
+ */
+public class AstroGameMain extends JFrame implements ActionListener {
+	private static final long serialVersionUID = 6845535386415711906L;
+	// Program variables for the Menu items and the game board
+	private JMenuItem newOption, exitOption, rulesMenuItem, creditsMenuItem;
+	private AstroGameBoard gameBoard;
+
+	// Getting the images for the Screens
+	Image menuScreen = new ImageIcon("img\\bg\\MainGamePage.gif").getImage();
+	Image instructionScreen = new ImageIcon("img\\bg\\InstructionScreen.png")
+			.getImage();
+	Image scoreScreen = new ImageIcon("img\\bg\\ScoreScreen.png").getImage();
+	Image newGame = new ImageIcon("img\\bg\\NewGameButton.gif").getImage();
+
+	// Draws the main menu screen
+	private class MainMenu extends JPanel {
+		// Inner class to handle mouse events
+		private class MouseHandler extends MouseAdapter {
+			@Override
+			public void mousePressed(MouseEvent event) {
+				Point pressed = event.getPoint();
+
+				// If the user clicks on the "New Game" area, the game will
+				// begin.
+				if (chosenScreen == 0) {
+					if (pressed.x >= 535 && pressed.x <= 810
+							&& pressed.y >= 391 && pressed.y <= 432) {
+
+						startGame();
+					}
+					// If the user clicks on the "Instructions" area, the
+					// instruction screen will be called.
+					else if (pressed.x >= 537 && pressed.x <= 737
+							&& pressed.y >= 480 && pressed.y <= 520) {
+						chosenScreen = 1;
+					}
+				}
+				// If the user is on the "Instructions Screen" and clicks on the
+				// New Game area, start the game.
+				else if (chosenScreen == 1) {
+					if (pressed.x >= 570 && pressed.x <= 929
+							&& pressed.y >= 406 && pressed.y < 480) {
+						chosenScreen = 0;
+						startGame();
+					}
+				}
+				// If the user is on the "Score Screen" and clicks on the New
+				// Game area, start the game.
+				else if (chosenScreen == 2) {
+					if (pressed.x >= 523 && pressed.x <= 850
+							&& pressed.y >= 465 && pressed.y < 534) {
+						chosenScreen = 0;
+						startGame();
+
+					}
+				}
+			}
+		}
+
+		private static final long serialVersionUID = 1L;
+		private int chosenScreen = 0;
+
+		public MainMenu() {
+			// The Main Menu is set to the same size as the gameboard in the
+			// AstroGameBoard Java
+			Dimension size = new Dimension(929, 675);
+			// set size of this drawing panel
+			setPreferredSize(size);
+			// Add mouse listeners to the drawing panel
+			addMouseListener(new MouseHandler());
+
+			// Add key listeners and setting focus
+			setFocusable(true);
+		}
+
+		// Method that is called when starting a new game
+		public void startGame() {
+			AstroGameMain.this.add(mainGame, BorderLayout.CENTER);
+			mainGame.setVisible(true);
+			menu.setVisible(false);
+			AstroGameMain.this.setVisible(false);
+			AstroGameMain.this.pack();
+			AstroGameMain.this.setVisible(true);
+		}
+
+		/**
+		 * Repaint the drawing panel. Java calls this method any time you call
+		 * repaint()
+		 * 
+		 * @param g
+		 *            The Graphics context
+		 */
+		@Override
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+
+			// If you are on the Main Menu Screen.
+			if (chosenScreen == 0) {
+				g.drawImage(menuScreen, 0, 0, this);
+			}
+			// If you are on the Instruction Screen.
+			else if (chosenScreen == 1) {
+				g.drawImage(instructionScreen, 0, 0, this);
+				g.drawImage(newGame, 824, 718, this);
+			}
+			// If the game is finished, this displays the score screen.
+			else if (chosenScreen == 2) {
+				g.drawImage(scoreScreen, 0, 0, this);
+				g.drawImage(newGame, 824, 718, this);
+				
+			}
+		} // Paint component method
+	}
+
+	MainMenu menu;
+
+	AstroGameBoard mainGame;
+
+	public void startMenu() {
+		menu.chosenScreen = 2;
+		getContentPane().add(gameBoard, BorderLayout.CENTER);
+		this.add(menu, BorderLayout.CENTER);
+		mainGame.setVisible(false);
+		menu.setVisible(true);
+		JOptionPane.showMessageDialog(this, "Congratulations! "
+				+ "\n\nYou got to Wave " + (gameBoard.waveNumber()-1) , "Game Over",
+				JOptionPane.INFORMATION_MESSAGE);
+		
+	
+		
+	}
+
+	/**
+	 * Constructs a new ConnectFourMain frame (sets up the Game)
+	 */
+	public AstroGameMain() {
+		// Sets up the frame for the game
+		super("Astro Defence");
+
+		// Sets up the different screens that the game will use
+		setResizable(false);
+		menu = new MainMenu();
+		gameBoard = new AstroGameBoard(this);
+		mainGame = gameBoard;
+		getContentPane().add(gameBoard, BorderLayout.CENTER);
+		this.add(menu, BorderLayout.CENTER);
+		mainGame.setVisible(false);
+
+		// Center the frame in the middle (almost) of the screen
+		setLocationRelativeTo(null);
+
+		// Adds the menu and menu items to the frame
+
+		// When in the game play screen, and when it is clicked, will restart
+		// the game
+		newOption = new JMenuItem("New");
+		newOption.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,
+				InputEvent.CTRL_MASK));
+		newOption.addActionListener(this);
+
+		// When clicked, the program shuts off
+		exitOption = new JMenuItem("Exit");
+		exitOption.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X,
+				InputEvent.CTRL_MASK));
+		exitOption.addActionListener(this);
+
+		// Set up the Help Menu
+		JMenu helpMenu = new JMenu("Help");
+		helpMenu.setMnemonic('H');
+
+		// Set up the Rules Item
+		rulesMenuItem = new JMenuItem("Rules...", 'R');
+		rulesMenuItem.addActionListener(this);
+		helpMenu.add(rulesMenuItem);
+
+		// Set up the Credits Item
+		creditsMenuItem = new JMenuItem("Credits...", 'C');
+		creditsMenuItem.addActionListener(this);
+		helpMenu.add(creditsMenuItem);
+
+		// Add each MenuItem to the Game Menu (with a separator)
+		JMenu gameMenu = new JMenu("Game");
+		gameMenu.add(newOption);
+		gameMenu.addSeparator();
+		gameMenu.add(exitOption);
+		JMenuBar mainMenu = new JMenuBar();
+		mainMenu.add(gameMenu);
+		mainMenu.add(helpMenu);
+		// Set the menu bar for this frame to mainMenu
+		setJMenuBar(mainMenu);
+	} // Constructor
+
+	/**
+	 * Responds to a Menu Event. This method is needed since our Connect Four
+	 * frame implements ActionListener
+	 * 
+	 * @param event
+	 *            the event that triggered this method
+	 */
+	public void actionPerformed(ActionEvent event) {
+
+		// Starts the new game
+		if (event.getSource() == newOption) {
+			gameBoard.newGame("gameboard.txt");
+		}
+		// Exits Program
+		else if (event.getSource() == exitOption) {
+			setVisible(false);
+			System.exit(0);
+		}
+		// Displays the rules and quick run down of the game
+		else if (event.getSource() == rulesMenuItem) // Selected "Rules"
+		{
+			JOptionPane
+					.showMessageDialog(
+							this,
+							"The objective of Astro-Defence is to save your Base!"
+									+ "\n\nEach turn, aliens walk down the path to your base;"
+									+ "\nbuild towers to capture the aliens!"
+									+ "\n\n Survive the waves, and don't run out of lives!"
+									+ "\n\nGood luck!",
+							"Astro-Defence Instructions",
+							JOptionPane.INFORMATION_MESSAGE);
+		}
+		// Displays the Credits
+		else if (event.getSource() == creditsMenuItem) {
+			JOptionPane
+					.showMessageDialog(this, "by Elliott, Sina, and Christian"
+							+ "\n\u00a9 2014", "Credits of Astro-Defence",
+							JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+
+	/**
+	 * Starts up the AstroGameMain Frame
+	 * 
+	 * @param args
+	 *            An array of Strings (ignored)
+	 */
+	public static void main(String[] args) {
+		// Starts up the AstroGameMain
+		AstroGameMain frame = new AstroGameMain();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setResizable(false);
+		frame.pack();
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+	} // main method
+}

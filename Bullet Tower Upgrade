@@ -1,0 +1,198 @@
+// Import for ArrayList and to draw images
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.util.ArrayList;
+
+/**
+ * Class for data and methods of the bullet object
+ * 
+ * @author Sina, Elliott and Christian
+ * @version June 16, 2014
+ */
+
+public class Bullet
+{
+	// Declare all the necessary variables for the bullet object
+	protected double xPos;
+	protected double yPos;
+	private double direction;
+	protected double size;
+	protected int speed;
+	protected int damage;
+	private final int normalSpeed = 15;
+	private final int fastSpeed = 60;
+	protected boolean intact;
+	private Alien alien;
+	protected Tower tower;
+
+
+	/**
+	 * Constructs a bullet object
+	 * 
+	 * @param xPos the initial x-coordinate of the bullet (same as tower that
+	 *            made it)
+	 * @param yPos the initial y-coordinate of the bullet (same as tower that
+	 *            made it)
+	 * @param size the radius of the bullet
+	 * @param speed the speed of the bullet (amount it moves per time event)
+	 * @param damage the damage the bullet does if it collides with an alien
+	 * @param alien the alien the bullet is currently targeted at
+	 * @param fast boolean that determines whether this bullet is in fastforward
+	 *            or not
+	 * @param tower the tower that created this bullet
+	 */
+	public Bullet(double xPos, double yPos, int size, int speed, int damage,
+			Alien alien, Tower tower)
+
+	{
+		// Initialize all the bullet variables
+		this.xPos = xPos;
+		this.yPos = yPos;
+		this.size = size;
+		this.speed = speed;
+		this.damage = damage;
+		this.alien = alien;
+		this.intact = true;
+		this.tower = tower;
+		// Adjust the direction of the bullet in the beginning to face the enemy
+		this.directionAdjust();
+
+	}
+
+	/**
+	 * Adjusts the direction of the bullet in order to face the alien that it is
+	 * targeting
+	 */
+	public void directionAdjust()
+	{
+
+		// If the alien is alive the angle that the bullet must face is found
+		// using the inverse tangent
+		if (alien.isAlive() && alien.onScreen())
+		{
+			direction = Math.atan((this.yPos - alien.yPos())
+					/ (this.xPos - alien.xPos()));
+			// Adjust the direction for special cases in inverse tangent (since
+			// the range is limited to (-pi/2,pi/2))
+			if (this.xPos > alien.xPos())
+			{
+				direction += Math.PI;
+
+			}
+			else if (this.xPos == alien.xPos())
+			{
+				if (this.yPos > alien.yPos())
+					direction = 3 * Math.PI / 2;
+				else if (this.yPos < alien.yPos())
+					direction = Math.PI / 2;
+			}
+		}
+
+	}
+
+	/**
+	 * Speeds up the bullet to its fast forward speed (4x)
+	 */
+	public void fastForward()
+	{
+
+		this.speed = fastSpeed;
+	
+	}
+
+	/**
+	 * Slows down the bullet to its normal speed
+	 */
+	public void normal()
+	{
+
+		this.speed = normalSpeed;
+	
+
+	}
+
+	/**
+	 * Changes the bullet's coordinates according to its speed and direction
+	 */
+	public void move()
+	{
+		// Adjust the direction and use trigonometry to determine how much x and
+		// y should change by
+		this.directionAdjust();
+
+		this.xPos += speed * Math.cos(direction);
+		this.yPos += speed * Math.sin(direction);
+
+	}
+
+	/**
+	 * Draws the bullet
+	 * 
+	 * @param g Graphics for drawing the bullet
+	 */
+	public void draw(Graphics g)
+	{
+		// Used for drawing round shapes to prevent jagged edges
+		Graphics2D g2 = (Graphics2D) g;
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		// Draws a red circle based on size and coordinates
+		g2.setColor(Color.RED);
+		g2.fillOval((int) (xPos - size / 2), (int) (yPos - size / 2),
+				(int) size, (int) size);
+
+	}
+
+	/**
+	 * Checks if the bullet has collided with any of the aliens and if so it
+	 * does damage to it or if the bullet has collided with walls
+	 * 
+	 * @param aliens the ArrayList containing all the aliens currently in the
+	 *            game
+	 */
+	public void collisionCheck(ArrayList<Alien> aliens)
+	{
+		// For each alien, check if the alien is in the appropriate collision
+		// range and if so
+		// do damage to the alien, increase the hits for the tower and change
+		// the status of the bullet
+		// to not intact
+		for (Alien nextAlien : aliens)
+		{
+			if ((this.xPos - nextAlien.xPos()) * (this.xPos - nextAlien.xPos())
+					+ (this.yPos - nextAlien.yPos())
+					* (this.yPos - nextAlien.yPos()) <= (this.size / 2.0 + 27
+					/ Math.sqrt(2) + this.speed / 2)
+					* (this.size / 2.0 + 27 / Math.sqrt(2) + this.speed / 2)
+					&& nextAlien.isAlive())
+			{
+				nextAlien.takeDamage(this.damage);
+				tower.increaseNoOfHits();
+				this.intact = false;
+
+			}
+		}
+		// Checks if the bullet is off of the board and if so the bullet is no
+		// longer intact
+		if (this.xPos < 0 || this.yPos < 0 || this.xPos > 729
+				|| this.yPos > 675)
+		{
+			this.intact = false;
+
+		}
+
+	}
+
+	/**
+	 * Method determines if a bullet is still intact or not
+	 * 
+	 * @return boolean for whether or not the bullet is intact or not
+	 */
+	public boolean isIntact()
+	{
+		return this.intact;
+	}
+
+}

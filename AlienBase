@@ -1,0 +1,288 @@
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+
+import javax.swing.ImageIcon;
+
+/**
+ * Class for data and methods of the Alien object
+ * 
+ * @author Elliott, Christian, and Sina
+ * @version June 16, 2014
+ */
+public class Alien {
+	// Declare constant dimensions for the aliens
+	static final int ALIEN_HEIGHT = 27;
+	static final int ALIEN_WIDTH = 27;
+	private static int[][] positionNode = { { -50, 338 }, { 67, 338 },
+			{ 67, 40 }, { 175, 40 }, { 175, 445 }, { 67, 445 }, { 67, 607 },
+			{ 283, 607 }, { 283, 472 }, { 364, 472 }, { 364, 337 },
+			{ 283, 337 }, { 283, 256 }, { 391, 256 }, { 391, 175 },
+			{ 283, 175 }, { 283, 40 }, { 364, 40 }, { 364, 121 }, { 472, 121 },
+			{ 472, 553 }, { 364, 553 }, { 364, 634 }, { 580, 634 },
+			{ 580, 67 }, { 661, 67 }, { 661, 148 }, { 634, 148 }, { 634, 634 },
+			{ 688, 634 }, { 688, 337 }, { 728, 337 } };
+
+	// Declare variables for the alien object
+	private int x;
+	private int angleAlien;
+	private int y;
+	private int currentHealth;
+	private int fullHealth;
+	private int gold;
+	private int speed;
+	private int damage;
+	private Image image;
+	private boolean slow;
+	private boolean frozen;
+	private int time;
+	private boolean fastForward;
+	private int normalSpeed;
+	private int node;
+	private int changeX;
+	private int changeY;
+	private int netChange;
+
+	/**
+	 * 
+	 * @param name
+	 *            the name of the alien
+	 * @param damage
+	 *            the damage the alien deals to the player
+	 * @param gold
+	 *            the amount of gold the player gets when they capture the alien
+	 * @param speed
+	 *            the speed of the alien
+	 * @param fullHealth
+	 *            starting health of the alien
+	 * @param x
+	 *            the starting x coordinate
+	 */
+	public Alien(String name, int damage, int gold, int speed, int fullHealth,
+			int x) {
+		// Initialize all variables
+		image = new ImageIcon("img\\alien\\" + name + ".png").getImage();
+		this.node = 0;
+		this.currentHealth = fullHealth;
+		this.fullHealth = fullHealth;
+		this.gold = gold;
+		this.speed = speed;
+		this.damage = damage;
+		this.x = x;
+		this.y = 351;
+		this.angleAlien = 0;
+		this.slow = false;
+		;
+		this.fastForward = false;
+		this.normalSpeed = speed;
+
+	}
+
+	/**
+	 * Draws the Alien graphics
+	 * 
+	 * @param g
+	 *            Graphics for drawing the alien
+	 */
+	public void draw(Graphics g) {
+		Graphics2D g2D = (Graphics2D) g;
+		g2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+
+		AffineTransform old = g2D.getTransform();
+		// Rotate the alien
+		g2D.rotate(Math.toRadians(angleAlien), x, y);
+		g.drawImage(image, x - 13, y - 13, null);
+		g2D.setTransform(old);
+		g.setColor(Color.RED);
+		g.fillRect(x - 13, y - ALIEN_HEIGHT / 2 - 5, ALIEN_WIDTH, 7);
+		g.setColor(Color.GREEN);
+		g.fillRect(x - 13, y - ALIEN_HEIGHT / 2 - 5,
+				(ALIEN_WIDTH * currentHealth) / fullHealth, 7);
+	}
+
+	/**
+	 * Deals damage to the alien
+	 * 
+	 * @param towerDamage
+	 *            damage done to the alien
+	 */
+	public void takeDamage(int towerDamage) {
+		currentHealth -= towerDamage;
+
+	}
+
+	/**
+	 * speed up the alien in relativity to everything else
+	 */
+	public void fastForward() {
+		if (!fastForward)
+			this.speed *= 4;
+		fastForward = true;
+
+	}
+
+	/**
+	 * bring the alien to normal speed
+	 */
+	public void normal() {
+		if (fastForward)
+			this.speed /= 4;
+		fastForward = false;
+	}
+
+	/**
+	 * Finds the x position of the alien
+	 * 
+	 * @return x the x coordinate of the aliens x location
+	 */
+	public int xPos() {
+		return this.x;
+	}
+
+	/**
+	 * Finds the y position of the alien
+	 * 
+	 * @return y the y coordinate of the aliens y location
+	 */
+	public int yPos() {
+		return this.y;
+	}
+
+	/**
+	 * Checks to see if the alien is alive
+	 * 
+	 * @return the boolean for if the alien is alive
+	 */
+	public boolean isAlive() {
+		if (currentHealth > 0)
+			return true;
+		else
+			return false;
+	}
+
+	/**
+	 * checks to see if the alien is on screen
+	 * 
+	 * @return boolean for if the alien is on screen
+	 */
+	public boolean onScreen() {
+		if (this.x < 728 && this.x >= 0)
+			return true;
+		else
+			return false;
+	}
+
+	/**
+	 * Checks to see if the alien is frozen
+	 * 
+	 * @return if the alien is frozen
+	 */
+	public boolean isFrozen() {
+		return this.frozen;
+	}
+
+	/**
+	 * returns the amount of gold given to the player
+	 * 
+	 * @return gold given to the player
+	 */
+	public int capturedGold() {
+		return gold;
+	}
+
+	/**
+	 * returns the amount of damage dealt to the player
+	 * 
+	 * @return damage dealt to player
+	 */
+	public int damageToPlayer() {
+		return damage;
+	}
+
+	/**
+	 * slows or freezes the alien
+	 * 
+	 * @param freeze
+	 *            boolean to check to see if the alien is frozen
+	 */
+	public void slow(boolean freeze) {
+		if (!slow && !freeze) {
+			this.slow = true;
+			this.speed /= 2;
+		}
+
+		else if (freeze) {
+			this.slow = false;
+			this.speed = 0;
+			this.frozen = true;
+		}
+
+		this.time = 0;
+
+	}
+
+	/**
+	 * moves the alien along the path
+	 * 
+	 * @return if the alien is alive
+	 */
+	public boolean move() {
+		this.time += 35;
+
+		// Finds if it is fast forwarded or slown
+		if (this.time >= 3000 && (this.slow || this.frozen)) {
+			this.slow = false;
+			this.frozen = false;
+			if (!fastForward)
+				this.speed = normalSpeed;
+			else
+				this.speed = normalSpeed * 4;
+			this.time = 0;
+		}
+
+		if (x < -50)
+			x += speed;
+		else if (x != positionNode[node][0] || y != positionNode[node][1]) {
+			if (speed <= netChange)
+			// The angle the alien should be turned, increase by speed
+			{
+				if (angleAlien == 0)
+					x += speed;
+				if (angleAlien == 180)
+					x -= speed;
+				else if (angleAlien == 270)
+					y -= speed;
+				else if (angleAlien == 90)
+					y += speed;
+				netChange = netChange - speed;
+			}
+			// Set the alien to the node position
+			else {
+				x = positionNode[node][0];
+				y = positionNode[node][1];
+			}
+		} else {
+			node++;
+			if (node > 31) {
+				return true;
+			}
+			// Changes the coordinates for the next x and y position
+			changeX = positionNode[node][0] - x;
+			changeY = positionNode[node][1] - y;
+			netChange = (int) Math.sqrt(changeX * changeX + changeY * changeY);
+			if (changeX > 0)
+				angleAlien = 0;
+			else if (changeX < 0)
+				angleAlien = 180;
+			else if (changeY > 0)
+				angleAlien = 90;
+			else
+				angleAlien = 270;
+		}
+		return false;
+	}
+}

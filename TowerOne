@@ -1,0 +1,508 @@
+// Imports for ArrayList and for Graphics
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+import javax.swing.ImageIcon;
+
+/**
+ * Class for data and methods of the Tower object
+ * 
+ * @author Sina, Christian and Elliott
+ * @version June 16, 2014
+ */
+public class Tower
+{
+	// Declare variables for the tower object
+	protected double xPos;
+	protected double yPos;
+	protected int firingRate;
+	private int range;
+	private int cost;
+	protected int width;
+	protected Image towerImage;
+	protected int height;
+	protected Alien closestAlien;
+	protected int damage;
+	protected int speed;
+	protected int type;
+	protected int sizeOfBullets;
+	protected int time;
+	private int noOfHits;
+	protected boolean explodeUpgrade;
+	protected boolean freezeUpgrade;
+	protected boolean laserUpgrade;
+	protected boolean rangeUpgrade;
+	protected boolean damageUpgrade;
+	protected boolean fireUpgrade;
+	protected double direction;
+	protected boolean hasAlien;
+
+	/**
+	 * Constructs a tower object
+	 * 
+	 * @param xPos the x coordinate of the tower
+	 * @param yPos the y coordinate of the tower
+	 * @param firingRate the number of milliseconds it takes for the tower to
+	 *            reload after taking a shot
+	 * @param range the maximum distance at which an alien can be and the tower
+	 *            will select it
+	 * @param cost the amount of gold the player must use to purchase the tower
+	 * @param damage the amount of damage the bullets from the tower do
+	 * @param speed the speed at which bullets from the tower move
+	 * @param sizeOfBullets the size of the bullets from the tower
+	 * @param width the width of the tower
+	 * @param height the height of the tower
+	 * @param name the name of the .png file for the tower image
+	 */
+	public Tower(double xPos, double yPos, int firingRate, int range, int cost,
+			int damage, int speed, int sizeOfBullets, int width, int height,
+			String name)
+	{
+		// Initialize all the variables
+		this.firingRate = firingRate;
+		this.xPos = xPos;
+		this.yPos = yPos;
+		this.range = range;
+		this.cost = cost;
+		this.damage = damage;
+		this.speed = speed;
+		towerImage = new ImageIcon("img\\tower\\" + name + ".png").getImage();
+		this.sizeOfBullets = sizeOfBullets;
+		this.width = width;
+		this.height = height;
+		this.hasAlien = false;
+		this.time = 0;
+		this.direction = 0;
+
+		this.noOfHits = 0;
+		this.explodeUpgrade = false;
+		this.laserUpgrade = false;
+
+	}
+
+	/**
+	 * Sets the boolean exploding upgrade to true
+	 */
+	public void explodeUpgrade()
+	{
+		this.explodeUpgrade = true;
+	}
+
+	/**
+	 * Method returns the range of the tower
+	 * 
+	 * @return the range of the tower
+	 */
+	public int range()
+	{
+		return this.range;
+	}
+
+	/**
+	 * Method returns the damage of the tower
+	 * 
+	 * @return the damage of the tower
+	 */
+	public int damage()
+	{
+		return this.damage;
+	}
+
+	/**
+	 * Changes the cost of the tower based on how many upgrades it is given
+	 * (more upgrades means it is more valuable)
+	 * 
+	 * @param upgradeAmount the amount that the upgrade/removal of upgrade
+	 *            should change the cost of the tower
+	 */
+	public void changeTowerCost(int upgradeAmount)
+	{
+		cost += upgradeAmount;
+	}
+
+	/**
+	 * Sets the boolean for explode upgrade to false
+	 */
+	public void removeExplodeUpgrade()
+	{
+		this.explodeUpgrade = false;
+	}
+
+	/**
+	 * Checks if the tower has explode upgrade or not
+	 * 
+	 * @return the boolean for whether or not the tower has explode upgrade
+	 */
+	public boolean isExploding()
+	{
+		return this.explodeUpgrade;
+	}
+
+	/**
+	 * Sets the boolean for freeze upgrade to true
+	 */
+	public void freezeUpgrade()
+	{
+		this.freezeUpgrade = true;
+	}
+
+	/**
+	 * Sets the boolean for freeze upgrade to false
+	 */
+	public void removeFreezeUpgrade()
+	{
+		this.freezeUpgrade = false;
+	}
+
+	/**
+	 * Sets the boolean for laser upgrade to true
+	 */
+	public void laserUpgrade()
+	{
+		this.laserUpgrade = true;
+	}
+
+	/**
+	 * Sets the boolean for laser upgrade to false
+	 */
+	public void removeLaserUpgrade()
+	{
+		this.laserUpgrade = false;
+	}
+
+	/**
+	 * Checks if the tower has a laser upgrade
+	 * 
+	 * @return the boolean for whether or not the tower has a laser upgrade
+	 */
+	public boolean isLaser()
+	{
+		return this.laserUpgrade;
+	}
+
+	/**
+	 * Checks if the tower has a freeze upgrade
+	 * 
+	 * @return the boolean for if the tower has a freeze upgrade
+	 */
+
+	public boolean isFreezing()
+	{
+		return this.freezeUpgrade;
+	}
+
+	/**
+	 * Identifies the type of tower based on the subclasses (1,2,3,4)
+	 * 
+	 * @return the type of the tower
+	 */
+	public int type()
+	{
+		return this.type;
+	}
+
+	/**
+	 * Upgrades the tower's firing rate
+	 */
+	public void firingUpgrade()
+	{
+		// Set the tower so it shoots twice as fast
+		this.firingRate /= 2;
+		this.fireUpgrade = true;
+	}
+
+	/**
+	 * Removes the firing upgrade
+	 */
+	public void removeFiringUpgrade()
+	{
+		// Set the firing rate to its normal rate
+		this.firingRate *= 2;
+		this.fireUpgrade = false;
+	}
+
+	/**
+	 * Checks if the tower has a firing upgrade
+	 * 
+	 * @return the boolean for if the tower has a fire upgrade
+	 */
+	public boolean isFiringUpgrade()
+	{
+		return this.fireUpgrade;
+	}
+
+	/**
+	 * Upgrades the damage of the tower
+	 */
+	public void damageUpgrade()
+	{
+		// Increases damage by 50%
+		this.damage = this.damage * 3 / 2;
+		this.damageUpgrade = true;
+	}
+
+	/**
+	 * Removes the damage upgrade
+	 */
+	public void removeDamageUpgrade()
+	{
+		// Returns damage to original value
+		this.damage = this.damage * 2 / 3;
+		this.damageUpgrade = false;
+	}
+
+	/**
+	 * Checks if the tower has a damage upgrade
+	 * 
+	 * @return the boolean for if the tower has a damage upgrade
+	 */
+	public boolean isDamageUpgrade()
+	{
+		return this.damageUpgrade;
+	}
+
+	/**
+	 * Upgrades the range of a tower
+	 */
+	public void rangeUpgrade()
+	{
+		// Increase range by 10%
+		this.range = this.range * 11 / 10;
+		this.rangeUpgrade = true;
+	}
+
+	/**
+	 * Removes the range upgrade
+	 */
+	public void removeRangeUpgrade()
+	{
+		// Returns range to original value
+		this.range = this.range * 10 / 11;
+		this.rangeUpgrade = false;
+	}
+
+	/**
+	 * Checks if the tower has a range upgrade
+	 * 
+	 * @return boolean for if the tower has range upgrade
+	 */
+	public boolean isRangeUpgrade()
+	{
+		return this.rangeUpgrade;
+	}
+
+	/**
+	 * Draws the tower graphic
+	 * 
+	 * @param g Graphics for drawing the tower
+	 */
+	public void draw(Graphics g)
+	{
+
+		// To eliminate sharp edges
+		Graphics2D g2 = (Graphics2D) g;
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setColor(Color.BLACK);
+		// Draws the image of the tower
+		g2.drawImage(towerImage, (int) (xPos - 13), (int) (yPos - 13), null);
+
+		// If the tower has an alien to fire at, then adjust the direction of
+		// the tower so it will face the alien
+		if (this.hasAlien)
+		{
+			if (this.closestAlien.isAlive() && this.closestAlien.onScreen()
+					&& this.alienInRange(this.closestAlien))
+			{
+				direction = Math.atan((closestAlien.xPos() - this.xPos)
+						/ (this.yPos - closestAlien.yPos()));
+				if (this.yPos < closestAlien.yPos())
+				{
+					direction += Math.PI;
+
+				}
+				else if (this.yPos == closestAlien.yPos())
+				{
+					if (this.xPos > closestAlien.xPos())
+						direction = 3 * Math.PI / 2;
+					else if (this.xPos < closestAlien.xPos())
+						direction = Math.PI / 2;
+				}
+			}
+		}
+
+		// Rotate the graphic context, draw the tower gun portion, then rotate
+		// back
+		g2.rotate(direction, (int) xPos, (int) yPos);
+		g2.fillRect((int) xPos - 3, (int) (yPos - 13), 6, 14);
+		g2.rotate(-direction, (int) xPos, (int) yPos);
+
+	}
+
+	/**
+	 * Checks if a given alien is in range
+	 * 
+	 * @param alien to check for whether or not it is in range
+	 * @return boolean for whether or not the alien is in range
+	 */
+	public boolean alienInRange(Alien alien)
+	{
+		// Calculate the square of the distance from the alien to the tower and
+		// compare it to the square of the range to determine if the alien is in
+		// range
+		if ((alien.xPos() - this.xPos) * (alien.xPos() - this.xPos)
+				+ (alien.yPos() - this.yPos) * (alien.yPos() - this.yPos) <= range
+				* range)
+			return true;
+		else
+			return false;
+	}
+
+	/**
+	 * If possible, selects an alien for the tower to fire at
+	 * 
+	 * @param aliens the ArrayList of aliens currently in the game
+	 * @param bullets the ArrayList of bullets currently in the game
+	 */
+	public void alienSelect(ArrayList<Alien> aliens, ArrayList<Bullet> bullets)
+	{
+		// Increase the time of the tower by the time interval for the
+		// timerEventHandler
+		this.time += 35;
+		// Iterator to go through all the aliens
+		Iterator<Alien> it = aliens.iterator();
+		// If the tower doesn't have an alien to fire at, try to find one
+		if (!this.hasAlien)
+		{
+
+			int index = 0;
+			int indexOfClosestAlien = -1;
+			// Goes through the aliens until there is one that is alive, on
+			// screen and in range
+			while (!(this.hasAlien) && it.hasNext())
+			{
+
+				Alien nextAlien = it.next();
+				if (this.alienInRange(nextAlien) && nextAlien.isAlive()
+						&& nextAlien.onScreen())
+				{
+					indexOfClosestAlien = index;
+					this.hasAlien = true;
+				}
+				index++;
+			}
+			// If no alien meets the condition, the tower doesn't have an alien
+			// to fire at
+			if (indexOfClosestAlien == -1)
+				this.hasAlien = false;
+			// Otherwise, keep going until the closest alien is found
+			else
+			{
+				// Initially the closest alien is the alien that was in range,
+				// alive and on screen from the previous loop
+				closestAlien = aliens.get(indexOfClosestAlien);
+				// Go through the remaining aliens and if the distance from the
+				// alien to the tower is less than the closest alien
+				// it becomes the new closest alien
+				while (it.hasNext())
+				{
+					Alien nextAlien = it.next();
+					if ((nextAlien.xPos() - this.xPos)
+							* (nextAlien.xPos() - this.xPos)
+							+ (nextAlien.yPos() - this.yPos)
+							* (nextAlien.yPos() - this.yPos) < (closestAlien
+							.xPos() - this.xPos)
+							* (closestAlien.xPos() - this.xPos)
+							+ (closestAlien.yPos() - this.yPos)
+							* (closestAlien.yPos() - this.yPos)
+							&& nextAlien.isAlive() && nextAlien.onScreen())
+						closestAlien = nextAlien;
+				}
+				this.time=0;
+
+			}
+		}
+		// If the tower already has an alien to fire at
+		if (this.hasAlien)
+		{
+			// If the alien is on the screen, alive, in range and the firingRate
+			// time has passed, then fire a bullet at the alien
+			if (this.alienInRange(closestAlien) && closestAlien.isAlive()
+					&& closestAlien.onScreen())
+			{
+				if (this.time % firingRate == 0)
+				bullets.add(new Bullet(this.xPos, this.yPos,
+						this.sizeOfBullets, this.speed, this.damage,
+						this.closestAlien, this));
+
+			}
+			// Otherwise set the tower to find a new alien to fire at the next
+			// time the method is called
+			else
+				this.hasAlien = false;
+		}
+
+		
+
+	}
+
+	/**
+	 * Puts the tower in fast forward mode
+	 */
+	public void fastForward()
+	{
+		// If not fast forward, decrease firing rate and multiply speed by 4
+
+			this.firingRate /= 4;
+			this.speed = 60;
+		
+	}
+
+	/**
+	 * Returns the tower to normal speed
+	 */
+	public void normal()
+	{
+		// If fast forward, return firing rate and speed to normal values
+	
+		
+			this.firingRate *= 4;
+			this.speed = 15;
+		
+	
+	}
+
+	/**
+	 * Increase the amount of times the tower has hit an alien
+	 */
+	public void increaseNoOfHits()
+	{
+		this.noOfHits++;
+	}
+
+	/**
+	 * Specifies the number of times the tower has hit an alien
+	 * 
+	 * @return the number of times the tower has hit an alien
+	 */
+	public int noOfHits()
+	{
+		return this.noOfHits;
+	}
+
+	/**
+	 * Specifies the cost of the tower
+	 * 
+	 * @return the cost of the tower
+	 */
+	public int towerCost()
+	{
+		return cost;
+	}
+
+}

@@ -1,0 +1,15 @@
+/**
+ * Subclass inherits Alien data and methods for Alien 4
+ * @author Elliott, Christian, and Sina
+ * @version June 16,2014
+ */
+
+public class Alien4 extends Alien
+{
+	public Alien4(int x)
+	{
+		super("Alien4", 50, 18, 4, 3000, x);
+		
+	}
+	
+}
